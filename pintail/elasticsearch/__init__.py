@@ -16,14 +16,43 @@
 # Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02111-1307, USA.
 
+import codecs
+import os
 import urllib
 import uuid
 
 import pintail.search
+import pintail.site
 
 import elasticsearch
 
-class ElasticSearchProvider(pintail.search.SearchProvider):
+class ElasticSearchPage(pintail.site.MallardPage):
+    def __init__(self, directory):
+        pintail.site.MallardPage.__init__(self, directory, 'pintail-elasticsearch.page')
+
+    @property
+    def source_path(self):
+        return self.stage_path
+
+    def stage_page(self):
+        pintail.site.Site._makedirs(self.directory.stage_path)
+        from pkg_resources import resource_string
+        xsl = resource_string(__name__, 'pintail-elasticsearch.page')
+        fd = open(self.stage_path, 'w', encoding='utf-8')
+        fd.write(codecs.decode(xsl, 'utf-8'))
+        fd.close()
+
+    @classmethod
+    def get_pages_dir(cls, directory):
+        if directory.path == '/':
+            return [cls(directory)]
+        else:
+            return []
+
+
+class ElasticSearchProvider(pintail.search.SearchProvider,
+                            pintail.site.ToolsProvider,
+                            pintail.site.XslProvider):
     analyzers = {
         'ar': 'arabic',
         'bg': 'bulgarian',
@@ -70,6 +99,31 @@ class ElasticSearchProvider(pintail.search.SearchProvider):
         elhost = self.site.config.get('search_elastic_host')
         self.elastic = elasticsearch.Elasticsearch([elhost])
         self._indexes = []
+
+    @classmethod
+    def get_xsl(cls, site):
+        return [os.path.join(site.tools_path, 'pintail-elasticsearch-params.xsl'),
+                os.path.join(site.tools_path, 'pintail-elasticsearch.xsl')]
+
+    @classmethod
+    def build_tools(cls, site):
+        xsl = os.path.join(site.tools_path, 'pintail-elasticsearch-params.xsl')
+        fd = open(xsl, 'w')
+        fd.write('<xsl:stylesheet' +
+                 ' xmlns:xsl="http://www.w3.org/1999/XSL/Transform"' +
+                 ' version="1.0">\n')
+        fd.write('<xsl:param name="pintail.elasticsearch.host" select="\'%s\'"/>\n' %
+                 site.config.get('search_elastic_host'))
+        fd.write('<xsl:param name="pintail.elasticsearch.epoch" select="\'%s\'"/>\n' %
+                 site.search_provider.epoch)
+        fd.write('</xsl:stylesheet>\n')
+
+        from pkg_resources import resource_string
+        xsl = resource_string(__name__, 'pintail-elasticsearch.xsl')
+        fd = open(os.path.join(site.tools_path, 'pintail-elasticsearch.xsl'),
+                  'w', encoding='utf-8')
+        fd.write(codecs.decode(xsl, 'utf-8'))
+        fd.close()
 
     def get_analyzer(self, lang):
         # FIXME: if POSIX code, convert to BCP47

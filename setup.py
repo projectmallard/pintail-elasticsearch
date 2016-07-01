@@ -6,6 +6,9 @@ setup(
     description='Use Elasticsearch on Pintail sites.',
     packages=['pintail', 'pintail.elasticsearch'],
     namespace_packages=['pintail'],
+    package_data={
+        'pintail.elasticsearch': ['pintail-elasticsearch.xsl', 'pintail-elasticsearch.page']
+    },
     install_requires=['pintail>=0.2', 'elasticsearch'],
     author='Shaun McCance',
     author_email='shaunm@gnome.org',
