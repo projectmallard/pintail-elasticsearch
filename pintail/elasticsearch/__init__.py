@@ -17,6 +17,7 @@
 # 02111-1307, USA.
 
 import codecs
+import datetime
 import os
 import urllib
 import uuid
@@ -95,7 +96,10 @@ class ElasticSearchProvider(pintail.search.SearchProvider,
 
     def __init__(self, site):
         pintail.search.SearchProvider.__init__(self, site)
-        self.epoch = str(uuid.uuid1())
+        self.epoch = site.config.get('search_epoch')
+        if self.epoch is None:
+            self.epoch = (datetime.datetime.now().strftime('%Y-%m-%d') +
+                          '-' + str(uuid.uuid1()))
         elhost = self.site.config.get('search_elastic_host')
         self.elastic = elasticsearch.Elasticsearch([elhost])
         self._indexes = []
