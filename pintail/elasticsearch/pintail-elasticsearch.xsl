@@ -102,12 +102,19 @@ var searchfunc = function () {
     }
   };
   req.open('POST',
-    'http://' + es_host + '/' + es_epoch + '@en/_search'
+    'http://' + es_host + '/pintail@en/_search'
   );
   req.send(JSON.stringify({
     query: {
       filtered : {
-        filter: {term: {domain: domain}},
+        filter: {
+          bool: {
+            must: [
+              {term: {domain: domain}},
+              {term: {epoch: es_epoch}}
+            ]
+          }
+        },
         query: { bool: {
           should: [
             {match: {title: {query: searchbox.value, boost: 3}}},

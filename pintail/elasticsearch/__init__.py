@@ -138,24 +138,29 @@ class ElasticSearchProvider(pintail.search.SearchProvider,
             return
         self._indexes.append(lang)
 
-        analyzer = self.get_analyzer(lang)
-        self.elastic.indices.create(
-            index=(self.epoch + '@' + lang),
-            body={
-                'mappings': {
-                    'page': {
-                        'properties': {
-                            'path': {'type': 'string', 'index': 'not_analyzed'},
-                            'lang': {'type': 'string', 'index': 'not_analyzed'},
-                            'domain': {'type': 'string', 'index': 'not_analyzed'},
-                            'title': {'type': 'string', 'analyzer': analyzer},
-                            'desc': {'type': 'string', 'analyzer': analyzer},
-                            'keywords': {'type': 'string', 'analyzer': analyzer},
-                            'content': {'type': 'string', 'analyzer': analyzer}
+        if self.elastic.indices.exists('pintail@' + lang):
+            # FIXME: update index settings?
+            pass
+        else:
+            analyzer = self.get_analyzer(lang)
+            self.elastic.indices.create(
+                index=('pintail@' + lang),
+                body={
+                    'mappings': {
+                        'page': {
+                            'properties': {
+                                'path': {'type': 'string', 'index': 'not_analyzed'},
+                                'lang': {'type': 'string', 'index': 'not_analyzed'},
+                                'domain': {'type': 'string', 'index': 'not_analyzed'},
+                                'epoch': {'type': 'string', 'index': 'not_analyzed'},
+                                'title': {'type': 'string', 'analyzer': analyzer},
+                                'desc': {'type': 'string', 'analyzer': analyzer},
+                                'keywords': {'type': 'string', 'analyzer': analyzer},
+                                'content': {'type': 'string', 'analyzer': analyzer}
+                            }
                         }
                     }
-                }
-            })
+                })
 
     def index_page(self, page):
         self.site.log('INDEX', page.site_id)
@@ -168,8 +173,8 @@ class ElasticSearchProvider(pintail.search.SearchProvider,
         keywords = page.get_keywords()
         content = page.get_content()
 
-        elid = urllib.parse.quote(page.site_id, safe='')
-        elindex = self.epoch + '@' + lang
+        elid = urllib.parse.quote(page.site_id, safe='') + '@' + self.epoch
+        elindex = 'pintail@' + lang
 
         domains = []
         for domain in page.directory.get_search_domains():
@@ -183,6 +188,7 @@ class ElasticSearchProvider(pintail.search.SearchProvider,
             'path': page.site_id,
             'lang': lang,
             'domain': domains,
+            'epoch': self.epoch,
             'title': title,
             'desc': desc,
             'keywords': keywords,
