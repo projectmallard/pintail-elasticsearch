@@ -35,6 +35,10 @@ class ElasticSearchPage(pintail.site.MallardPage):
     def source_path(self):
         return self.stage_path
 
+    @property
+    def searchable(self):
+        return False
+
     def stage_page(self):
         pintail.site.Site._makedirs(self.directory.stage_path)
         from pkg_resources import resource_string
