@@ -24,12 +24,13 @@ import uuid
 
 import pintail.search
 import pintail.site
+import pintail.mallard
 
 import elasticsearch
 
-class ElasticSearchPage(pintail.site.MallardPage):
+class ElasticSearchPage(pintail.mallard.MallardPage):
     def __init__(self, directory):
-        pintail.site.MallardPage.__init__(self, directory, 'pintail-elasticsearch.page')
+        pintail.mallard.MallardPage.__init__(self, directory, 'pintail-elasticsearch.page')
 
     @property
     def source_path(self):
