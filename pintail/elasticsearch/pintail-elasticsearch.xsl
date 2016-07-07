@@ -62,6 +62,7 @@ div.search input:focus {
 (function() {
 var es_host = '<xsl:value-of select="$pintail.elasticsearch.host"/>';
 var es_epoch = '<xsl:value-of select="$pintail.elasticsearch.epoch"/>';
+var es_index = '<xsl:value-of select="$pintail.elasticsearch.index"/>';
 <![CDATA[
 var req = null;
 
@@ -102,7 +103,7 @@ var searchfunc = function () {
     }
   };
   req.open('POST',
-    'http://' + es_host + '/pintail@en/_search'
+    'http://' + es_host + '/' + es_index + '/_search'
   );
   req.send(JSON.stringify({
     query: {

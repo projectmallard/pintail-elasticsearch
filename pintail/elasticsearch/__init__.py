@@ -118,6 +118,7 @@ class ElasticSearchProvider(pintail.search.SearchProvider,
     def build_tools(cls, site):
         xsl = os.path.join(site.tools_path, 'pintail-elasticsearch-params.xsl')
         fd = open(xsl, 'w')
+        lang = 'en'
         fd.write('<xsl:stylesheet' +
                  ' xmlns:xsl="http://www.w3.org/1999/XSL/Transform"' +
                  ' version="1.0">\n')
@@ -125,6 +126,8 @@ class ElasticSearchProvider(pintail.search.SearchProvider,
                  site.config.get('search_elastic_host'))
         fd.write('<xsl:param name="pintail.elasticsearch.epoch" select="\'%s\'"/>\n' %
                  site.search_provider.epoch)
+        fd.write('<xsl:param name="pintail.elasticsearch.index" select="\'%s\'"/>\n' %
+                 site.search_provider.get_index(lang))
         fd.write('</xsl:stylesheet>\n')
 
         from pkg_resources import resource_string
@@ -133,6 +136,10 @@ class ElasticSearchProvider(pintail.search.SearchProvider,
                   'w', encoding='utf-8')
         fd.write(codecs.decode(xsl, 'utf-8'))
         fd.close()
+
+    def get_index(self, lang):
+        ix = self.site.config.get('search_elastic_index') or 'pintail@{lang}'
+        return ix.format(lang=lang, epoch=self.epoch)
 
     def get_analyzer(self, lang):
         # FIXME: if POSIX code, convert to BCP47
@@ -147,13 +154,14 @@ class ElasticSearchProvider(pintail.search.SearchProvider,
             return
         self._indexes.append(lang)
 
-        if self.elastic.indices.exists('pintail@' + lang):
+        elindex = self.get_index(lang)
+        if self.elastic.indices.exists(elindex):
             # FIXME: update index settings?
             pass
         else:
             analyzer = self.get_analyzer(lang)
             self.elastic.indices.create(
-                index=('pintail@' + lang),
+                index=(elindex),
                 body={
                     'mappings': {
                         'page': {
@@ -183,7 +191,7 @@ class ElasticSearchProvider(pintail.search.SearchProvider,
         content = page.get_content()
 
         elid = urllib.parse.quote(page.site_id, safe='') + '@' + self.epoch
-        elindex = 'pintail@' + lang
+        elindex = self.get_index(lang)
 
         domains = []
         for domain in page.directory.get_search_domains():
