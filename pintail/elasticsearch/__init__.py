@@ -193,13 +193,7 @@ class ElasticSearchProvider(pintail.search.SearchProvider,
         elid = urllib.parse.quote(page.site_id, safe='') + '@' + self.epoch
         elindex = self.get_index(lang)
 
-        domains = []
-        for domain in page.directory.get_search_domains():
-            if isinstance(domain, list):
-                if domain[0] == page.page_id:
-                    domains.append(domain[1])
-            else:
-                domains.append(domain)
+        domains = page.get_search_domains()
 
         self.elastic.index(index=elindex, doc_type='page', id=elid, body={
             'path': page.site_id,
