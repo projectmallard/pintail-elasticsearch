@@ -26,6 +26,11 @@ Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
                 exclude-result-prefixes="mal str exsl pintail"
                 version="1.0">
 
+<xsl:param name="pintail.elasticsearch.host"/>
+<xsl:param name="pintail.elasticsearch.epoch"/>
+<xsl:param name="pintail.elasticsearch.index"/>
+<xsl:param name="pintail.search.domains"/>
+
 <xsl:template name="pintail.elasticsearch.css">
 <xsl:text>
 div.search {
@@ -48,8 +53,18 @@ div.search input:focus {
 <xsl:template name="pintail.elasticsearch.searchform">
   <div class="search">
     <form action="{$pintail.site.root}search{$pintail.extension.link}">
-      <input type="hidden" name="epoch" value="{$pintail.elasticsearch.epoch}"/>
-      <input type="text" name="terms"/>
+      <xsl:variable name="d">
+        <xsl:choose>
+          <xsl:when test="contains($pintail.search.domains, ' ')">
+            <xsl:value-of select="substring-before($pintail.search.domains, ' ')"/>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:value-of select="$pintail.search.domains"/>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:variable>
+      <input type="hidden" name="d" value="{$d}"/>
+      <input type="text" name="q"/>
     </form>
   </div>
 </xsl:template>
@@ -63,10 +78,9 @@ div.search input:focus {
 var es_host = '<xsl:value-of select="$pintail.elasticsearch.host"/>';
 var es_epoch = '<xsl:value-of select="$pintail.elasticsearch.epoch"/>';
 var es_index = '<xsl:value-of select="$pintail.elasticsearch.index"/>';
+var es_domain = '/';
 <![CDATA[
 var req = null;
-
-var domain = '/';
 
 var searchbox = document.getElementById('es_search_field');
 var searchres = document.getElementById('es_search_results');
@@ -111,7 +125,7 @@ var searchfunc = function () {
         filter: {
           bool: {
             must: [
-              {term: {domain: domain}},
+              {term: {domain: es_domain}},
               {term: {epoch: es_epoch}}
             ]
           }
@@ -137,13 +151,23 @@ searchbox.oninput = function () {
 };
 
 var qs = window.location.search.substring(1).split('&');
+var d = null;
+var q = null;
 for (var i = 0; i < qs.length; i++) {
   var p = qs[i].split('=');
-  if (p[0] == 'terms') {
-    searchbox.value = p[1];
-    searchbox.oninput();
-    break;
+  if (p[0] == 'q') {
+    q = p[1];
   }
+  else if (p[0] == 'd') {
+    d = p[1];
+  }
+}
+if (d != null) {
+  es_domain = decodeURIComponent(d);
+}
+if (q != null) {
+  searchbox.value = decodeURIComponent(q);
+  searchbox.oninput();
 }
 
 })();

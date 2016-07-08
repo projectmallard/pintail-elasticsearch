@@ -111,25 +111,27 @@ class ElasticSearchProvider(pintail.search.SearchProvider,
 
     @classmethod
     def get_xsl(cls, site):
-        return [os.path.join(site.tools_path, 'pintail-elasticsearch-params.xsl'),
-                os.path.join(site.tools_path, 'pintail-elasticsearch.xsl')]
+        return [os.path.join(site.tools_path, 'pintail-elasticsearch.xsl')]
+
+    @classmethod
+    def get_xsl_params(cls, output, obj):
+        if not (output == 'html' and isinstance(obj, pintail.site.Page)):
+            return []
+        if not isinstance(obj.site.search_provider, ElasticSearchProvider):
+            return []
+        lang = 'en'
+        ret = [
+            ('pintail.elasticsearch.host', obj.site.config.get('search_elastic_host')),
+            ('pintail.elasticsearch.epoch', obj.site.search_provider.epoch),
+            ('pintail.elasticsearch.index', obj.site.search_provider.get_index(lang))
+        ]
+        domains = obj.get_search_domains()
+        if domains[0] != 'none':
+            ret.append(('pintail.search.domains', ' '.join(domains)))
+        return ret
 
     @classmethod
     def build_tools(cls, site):
-        xsl = os.path.join(site.tools_path, 'pintail-elasticsearch-params.xsl')
-        fd = open(xsl, 'w')
-        lang = 'en'
-        fd.write('<xsl:stylesheet' +
-                 ' xmlns:xsl="http://www.w3.org/1999/XSL/Transform"' +
-                 ' version="1.0">\n')
-        fd.write('<xsl:param name="pintail.elasticsearch.host" select="\'%s\'"/>\n' %
-                 site.config.get('search_elastic_host'))
-        fd.write('<xsl:param name="pintail.elasticsearch.epoch" select="\'%s\'"/>\n' %
-                 site.search_provider.epoch)
-        fd.write('<xsl:param name="pintail.elasticsearch.index" select="\'%s\'"/>\n' %
-                 site.search_provider.get_index(lang))
-        fd.write('</xsl:stylesheet>\n')
-
         from pkg_resources import resource_string
         xsl = resource_string(__name__, 'pintail-elasticsearch.xsl')
         fd = open(os.path.join(site.tools_path, 'pintail-elasticsearch.xsl'),
@@ -196,7 +198,7 @@ class ElasticSearchProvider(pintail.search.SearchProvider,
         domains = page.get_search_domains()
 
         self.elastic.index(index=elindex, doc_type='page', id=elid, body={
-            'path': page.site_id,
+            'path': page.site_path,
             'lang': lang,
             'domain': domains,
             'epoch': self.epoch,
