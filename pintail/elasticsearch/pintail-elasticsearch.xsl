@@ -47,6 +47,27 @@ div.search input:focus {
   border: solid 1px </xsl:text><xsl:value-of select="$color.blue"/><xsl:text>;
   box-shadow: 0 0 2px </xsl:text><xsl:value-of select="$color.blue"/><xsl:text>;
 }
+#es_search_domain {
+  margin: 0 0 10px 0;
+  padding: 4px 2px;
+}
+#es_search label {
+  margin: 0 4px;
+  color: </xsl:text><xsl:value-of select="$color.fg.gray"/><xsl:text>;
+}
+#es_search_field {
+  margin: 0 0 10px 0;
+  padding: 4px 8px;
+  font-size: 1.2em;
+  width: 75%;
+  text-align: left;
+  border-radius: 4px;
+  border: solid 1px </xsl:text><xsl:value-of select="$color.gray"/><xsl:text>;
+}
+#es_search_field:focus {
+  border: solid 1px </xsl:text><xsl:value-of select="$color.blue"/><xsl:text>;
+  box-shadow: 0 0 2px </xsl:text><xsl:value-of select="$color.blue"/><xsl:text>;
+}
 </xsl:text>
 </xsl:template>
 
@@ -70,14 +91,17 @@ div.search input:focus {
 </xsl:template>
 
 <xsl:template mode="mal2html.block.mode" match="pintail:searchpage">
-  <p>This is the search page.</p>
-  <input id="es_search_field" type="text"/>
-  <div id="es_search_results" class="links-divs"/>
+  <div id="es_search">
+    <div id="es_search_domains"></div>
+    <div><input id="es_search_field" type="text"/></div>
+    <div id="es_search_results" class="links-divs"/>
+  </div>
   <script>
 (function() {
 var es_host = '<xsl:value-of select="$pintail.elasticsearch.host"/>';
 var es_epoch = '<xsl:value-of select="$pintail.elasticsearch.epoch"/>';
 var es_index = '<xsl:value-of select="$pintail.elasticsearch.index"/>';
+var es_in_domain = false;
 var es_domain = '/';
 <![CDATA[
 var req = null;
@@ -125,7 +149,7 @@ var searchfunc = function () {
         filter: {
           bool: {
             must: [
-              {term: {domain: es_domain}},
+              {term: {domain: es_in_domain ? document.getElementById('es_search_domain').value : es_domain}},
               {term: {epoch: es_epoch}}
             ]
           }
@@ -164,9 +188,46 @@ for (var i = 0; i < qs.length; i++) {
 }
 if (d != null) {
   es_domain = decodeURIComponent(d);
+  if (es_domain != '/') {
+    es_in_domain = true;
+    var dboxd = document.getElementById('es_search_domains');
+    var lbl = document.createElement('label');
+    lbl.setAttribute('for', 'es_search_domain');
+    lbl.textContent = 'Search in: ';
+    dboxd.appendChild(lbl);
+
+    var dbox = document.createElement('select');
+    dbox.onchange = function () { searchbox.oninput(); };
+    dbox.setAttribute('id', 'es_search_domain');
+    dboxd.appendChild(dbox);
+
+    var opt1 = document.createElement('option');
+    opt1.setAttribute('value', es_domain);
+    opt1.textContent = es_domain;
+    dbox.appendChild(opt1);
+
+    req = new XMLHttpRequest();
+    req.onload = function () {
+      var data = JSON.parse(this.responseText);
+      if (data.found)
+        opt1.textContent = data.fields.title[0];
+    };
+    req.open('get',
+      'http://' + es_host + '/' + es_index + '/page/' +
+      encodeURIComponent(encodeURIComponent(es_domain)) +
+      'index@' + es_epoch + '?fields=title'
+    );
+    req.send();
+
+
+    var opt2 = document.createElement('option');
+    opt2.setAttribute('value', '/');
+    opt2.textContent = 'Entire Site';
+    dbox.appendChild(opt2);
+  }
 }
 if (q != null) {
-  searchbox.value = decodeURIComponent(q);
+  searchbox.value = decodeURIComponent(q.replace(/\+/g, ' '));
   searchbox.oninput();
 }
 
