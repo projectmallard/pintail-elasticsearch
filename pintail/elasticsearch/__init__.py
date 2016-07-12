@@ -187,10 +187,10 @@ class ElasticSearchProvider(pintail.search.SearchProvider,
         lang = 'en'
         self.create_index(lang)
 
-        title = page.get_title()
-        desc = page.get_desc()
-        keywords = page.get_keywords()
-        content = page.get_content()
+        title = page.get_title(hint='search')
+        desc = page.get_desc(hint='search')
+        keywords = page.get_keywords(hint='search')
+        content = page.get_content(hint='search')
 
         elid = urllib.parse.quote(page.site_id, safe='') + '@' + self.epoch
         elindex = self.get_index(lang)
