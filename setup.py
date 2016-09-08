@@ -1,5 +1,11 @@
 from setuptools import setup
 
+import sys
+
+if sys.version_info[0] != 3:
+    sys.stderr.write("pintail-elasticsearch requires python 3\n")
+    sys.exit(1)
+
 setup(
     name='pintail-elasticsearch',
     version='0.3',
