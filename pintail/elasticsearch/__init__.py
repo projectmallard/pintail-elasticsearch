@@ -30,19 +30,18 @@ class ElasticSearchPage(pintail.mallard.MallardPage):
     def __init__(self, directory):
         pintail.mallard.MallardPage.__init__(self, directory, 'pintail-elasticsearch.page')
 
-    @property
-    def source_path(self):
-        return self.stage_path
+    def get_source_path(self):
+        return self.get_stage_path()
 
     @property
     def searchable(self):
         return False
 
     def stage_page(self):
-        pintail.site.Site._makedirs(self.directory.stage_path)
+        pintail.site.Site._makedirs(self.directory.get_stage_path())
         from pkg_resources import resource_string
         xsl = resource_string(__name__, 'pintail-elasticsearch.page')
-        fd = open(self.stage_path, 'w', encoding='utf-8')
+        fd = open(self.get_stage_path(), 'w', encoding='utf-8')
         fd.write(codecs.decode(xsl, 'utf-8'))
         fd.close()
 
