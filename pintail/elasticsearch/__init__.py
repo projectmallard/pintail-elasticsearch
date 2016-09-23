@@ -138,7 +138,7 @@ class ElasticSearchProvider(pintail.search.SearchProvider,
 
     def get_index(self, lang):
         ix = self.site.config.get('search_elastic_index') or 'pintail@{lang}'
-        return ix.format(lang=lang, epoch=self.epoch)
+        return ix.format(lang=lang, epoch=self.epoch).lower()
 
     def get_analyzer(self, lang):
         # FIXME: if POSIX code, convert to BCP47
@@ -178,16 +178,19 @@ class ElasticSearchProvider(pintail.search.SearchProvider,
                     }
                 })
 
-    def index_page(self, page):
-        self.site.log('INDEX', page.site_id)
+    def index_page(self, page, lang=None):
+        if lang is None:
+            self.site.log('INDEX', page.site_id)
+            lang = self.site.translation_provider.get_source_lang()
+        else:
+            self.site.log('INDEX', lang + ' ' + page.site_id)
 
-        lang = 'en'
         self.create_index(lang)
 
-        title = page.get_title(hint='search')
-        desc = page.get_desc(hint='search')
-        keywords = page.get_keywords(hint='search')
-        content = page.get_content(hint='search')
+        title = page.get_title(hint='search', lang=lang)
+        desc = page.get_desc(hint='search', lang=lang)
+        keywords = page.get_keywords(hint='search', lang=lang)
+        content = page.get_content(hint='search', lang=lang)
 
         elid = urllib.parse.quote(page.site_id, safe='') + '@' + self.epoch
         elindex = self.get_index(lang)
