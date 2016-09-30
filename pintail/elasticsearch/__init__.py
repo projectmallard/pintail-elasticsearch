@@ -111,12 +111,11 @@ class ElasticSearchProvider(pintail.search.SearchProvider,
         return [os.path.join(site.tools_path, 'pintail-elasticsearch.xsl')]
 
     @classmethod
-    def get_xsl_params(cls, output, obj):
+    def get_xsl_params(cls, output, obj, lang=None):
         if not (output == 'html' and isinstance(obj, pintail.site.Page)):
             return []
         if not isinstance(obj.site.search_provider, ElasticSearchProvider):
             return []
-        lang = 'en'
         ret = [
             ('pintail.elasticsearch.host', obj.site.config.get('search_elastic_host')),
             ('pintail.elasticsearch.epoch', obj.site.search_provider.epoch),
