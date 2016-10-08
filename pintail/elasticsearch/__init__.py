@@ -180,7 +180,7 @@ class ElasticSearchProvider(pintail.search.SearchProvider,
     def index_page(self, page, lang=None):
         if lang is None:
             self.site.log('INDEX', page.site_id)
-            lang = self.site.translation_provider.get_source_lang()
+            lang = self.site.get_source_lang()
         else:
             self.site.log('INDEX', lang + ' ' + page.site_id)
 
