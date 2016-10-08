@@ -116,6 +116,9 @@ class ElasticSearchProvider(pintail.search.SearchProvider,
             return []
         if not isinstance(obj.site.search_provider, ElasticSearchProvider):
             return []
+        if lang is None:
+            if hasattr(obj, 'site'):
+                lang = obj.site.get_source_lang()
         ret = [
             ('pintail.elasticsearch.host', obj.site.config.get('search_elastic_host')),
             ('pintail.elasticsearch.epoch', obj.site.search_provider.epoch),
